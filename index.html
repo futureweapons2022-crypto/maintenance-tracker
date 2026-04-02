@@ -1,0 +1,1891 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#1B2A4A">
+<title>DCL Maintenance Tracker</title>
+<link rel="manifest" href="manifest.json">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=DM+Sans:wght@400;500;600;700&family=Noto+Kufi+Arabic:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+<script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<style>
+:root {
+  --navy: #1B2A4A;
+  --navy-light: #243556;
+  --navy-dark: #111D33;
+  --gold: #C5A572;
+  --gold-light: #D4BA8E;
+  --gold-dark: #A8884E;
+  --gold-glow: rgba(197, 165, 114, 0.15);
+  --cream: #F8F6F1;
+  --cream-dark: #EDE9E0;
+  --white: #FFFFFF;
+  --text-primary: #1B2A4A;
+  --text-secondary: #5A6478;
+  --text-light: #8A92A2;
+  --success: #2D8B55;
+  --warning: #D4930C;
+  --danger: #C0392B;
+  --pending-bg: #FFF3E0;
+  --pending-text: #E65100;
+  --progress-bg: #E3F2FD;
+  --progress-text: #1565C0;
+  --complete-bg: #E8F5E9;
+  --complete-text: #2E7D32;
+  --radius: 14px;
+  --radius-sm: 8px;
+  --shadow: 0 2px 12px rgba(27, 42, 74, 0.08);
+  --shadow-lg: 0 8px 32px rgba(27, 42, 74, 0.12);
+  --transition: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  --font-display: 'Playfair Display', serif;
+  --font-body: 'DM Sans', sans-serif;
+  --font-arabic: 'Noto Kufi Arabic', sans-serif;
+}
+
+[dir="rtl"] {
+  --font-body: 'Noto Kufi Arabic', 'DM Sans', sans-serif;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  font-family: var(--font-body);
+  background: var(--cream);
+  color: var(--text-primary);
+  min-height: 100vh;
+  overflow-x: hidden;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--gold); border-radius: 4px; }
+
+/* App Shell */
+.app-header {
+  background: linear-gradient(135deg, var(--navy) 0%, var(--navy-light) 100%);
+  padding: 16px 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  box-shadow: 0 4px 20px rgba(27, 42, 74, 0.2);
+}
+
+.app-header::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, var(--gold-dark), var(--gold), var(--gold-dark));
+}
+
+.header-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.logo-mark {
+  width: 36px;
+  height: 36px;
+  background: linear-gradient(135deg, var(--gold), var(--gold-dark));
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  color: var(--navy);
+  font-size: 16px;
+  font-family: var(--font-display);
+  box-shadow: 0 2px 8px rgba(197, 165, 114, 0.3);
+}
+
+.header-title {
+  color: var(--white);
+  font-family: var(--font-display);
+  font-size: 18px;
+  font-weight: 600;
+  letter-spacing: 0.3px;
+}
+
+[dir="rtl"] .header-title {
+  font-family: var(--font-arabic);
+  font-size: 17px;
+}
+
+.header-subtitle {
+  color: var(--gold-light);
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+}
+
+[dir="rtl"] .header-subtitle {
+  letter-spacing: 0;
+}
+
+.header-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.header-btn {
+  background: rgba(255,255,255,0.08);
+  border: 1px solid rgba(197, 165, 114, 0.2);
+  color: var(--gold-light);
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: var(--transition);
+  font-size: 16px;
+}
+
+.header-btn:hover {
+  background: rgba(197, 165, 114, 0.15);
+  border-color: var(--gold);
+}
+
+/* User selector modal */
+.user-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(17, 29, 51, 0.7);
+  backdrop-filter: blur(8px);
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  animation: fadeIn 0.3s ease;
+}
+
+.user-modal {
+  background: var(--white);
+  border-radius: var(--radius);
+  padding: 32px 24px;
+  width: 100%;
+  max-width: 360px;
+  box-shadow: var(--shadow-lg);
+  text-align: center;
+  animation: slideUp 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.user-modal h2 {
+  font-family: var(--font-display);
+  color: var(--navy);
+  margin-bottom: 4px;
+  font-size: 22px;
+}
+
+[dir="rtl"] .user-modal h2 {
+  font-family: var(--font-arabic);
+}
+
+.user-modal p {
+  color: var(--text-secondary);
+  margin-bottom: 20px;
+  font-size: 14px;
+}
+
+.user-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.user-btn {
+  padding: 14px;
+  border: 2px solid var(--cream-dark);
+  border-radius: var(--radius-sm);
+  background: var(--white);
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--navy);
+  cursor: pointer;
+  transition: var(--transition);
+  font-family: var(--font-body);
+}
+
+[dir="rtl"] .user-btn {
+  font-family: var(--font-arabic);
+}
+
+.user-btn:hover {
+  border-color: var(--gold);
+  background: var(--gold-glow);
+}
+
+/* Content area */
+.app-content {
+  padding: 16px 16px 100px;
+  max-width: 600px;
+  margin: 0 auto;
+}
+
+/* Bottom Nav */
+.bottom-nav {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: var(--white);
+  display: flex;
+  justify-content: space-around;
+  padding: 8px 0;
+  padding-bottom: max(8px, env(safe-area-inset-bottom));
+  box-shadow: 0 -4px 20px rgba(27, 42, 74, 0.08);
+  z-index: 100;
+  border-top: 1px solid var(--cream-dark);
+}
+
+.nav-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 6px 12px;
+  border: none;
+  background: none;
+  cursor: pointer;
+  transition: var(--transition);
+  color: var(--text-light);
+  font-size: 10px;
+  font-weight: 600;
+  font-family: var(--font-body);
+  position: relative;
+}
+
+[dir="rtl"] .nav-item {
+  font-family: var(--font-arabic);
+}
+
+.nav-item.active {
+  color: var(--gold-dark);
+}
+
+.nav-item.active::before {
+  content: '';
+  position: absolute;
+  top: -8px;
+  width: 24px;
+  height: 3px;
+  background: var(--gold);
+  border-radius: 0 0 3px 3px;
+}
+
+.nav-icon {
+  font-size: 22px;
+  line-height: 1;
+}
+
+/* Cards */
+.card {
+  background: var(--white);
+  border-radius: var(--radius);
+  padding: 20px;
+  margin-bottom: 12px;
+  box-shadow: var(--shadow);
+  border: 1px solid rgba(27, 42, 74, 0.04);
+}
+
+.card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+}
+
+.card-title {
+  font-family: var(--font-display);
+  font-size: 16px;
+  color: var(--navy);
+  font-weight: 700;
+}
+
+[dir="rtl"] .card-title {
+  font-family: var(--font-arabic);
+}
+
+/* Stats Grid */
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.stat-card {
+  background: var(--white);
+  border-radius: var(--radius);
+  padding: 16px;
+  box-shadow: var(--shadow);
+  border: 1px solid rgba(27, 42, 74, 0.04);
+  position: relative;
+  overflow: hidden;
+}
+
+.stat-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+}
+
+.stat-card.total::before { background: var(--navy); }
+.stat-card.pending::before { background: var(--pending-text); }
+.stat-card.progress::before { background: var(--progress-text); }
+.stat-card.complete::before { background: var(--complete-text); }
+
+.stat-number {
+  font-family: var(--font-display);
+  font-size: 28px;
+  font-weight: 700;
+  color: var(--navy);
+  line-height: 1;
+  margin-bottom: 4px;
+}
+
+.stat-label {
+  font-size: 12px;
+  color: var(--text-secondary);
+  font-weight: 500;
+}
+
+.stat-icon {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  font-size: 20px;
+  opacity: 0.4;
+}
+
+[dir="rtl"] .stat-icon {
+  right: auto;
+  left: 14px;
+}
+
+/* Page Title */
+.page-title {
+  font-family: var(--font-display);
+  font-size: 24px;
+  color: var(--navy);
+  margin-bottom: 16px;
+  font-weight: 700;
+}
+
+[dir="rtl"] .page-title {
+  font-family: var(--font-arabic);
+}
+
+/* Form Styles */
+.form-group {
+  margin-bottom: 14px;
+}
+
+.form-label {
+  display: block;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  margin-bottom: 6px;
+  letter-spacing: 0.3px;
+}
+
+.form-input, .form-select, .form-textarea {
+  width: 100%;
+  padding: 12px 14px;
+  border: 2px solid var(--cream-dark);
+  border-radius: var(--radius-sm);
+  font-size: 15px;
+  font-family: var(--font-body);
+  color: var(--text-primary);
+  background: var(--white);
+  transition: var(--transition);
+  -webkit-appearance: none;
+}
+
+[dir="rtl"] .form-input, [dir="rtl"] .form-select, [dir="rtl"] .form-textarea {
+  font-family: var(--font-arabic);
+}
+
+.form-input:focus, .form-select:focus, .form-textarea:focus {
+  outline: none;
+  border-color: var(--gold);
+  box-shadow: 0 0 0 3px var(--gold-glow);
+}
+
+.form-textarea {
+  resize: vertical;
+  min-height: 80px;
+}
+
+.form-select {
+  background-image: url("data:image/svg+xml,%3Csvg width='10' height='6' viewBox='0 0 10 6' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%235A6478' stroke-width='1.5' fill='none'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 14px center;
+  padding-right: 36px;
+}
+
+[dir="rtl"] .form-select {
+  background-position: left 14px center;
+  padding-right: 14px;
+  padding-left: 36px;
+}
+
+/* Buttons */
+.btn {
+  padding: 14px 24px;
+  border-radius: var(--radius-sm);
+  font-size: 15px;
+  font-weight: 600;
+  font-family: var(--font-body);
+  border: none;
+  cursor: pointer;
+  transition: var(--transition);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+}
+
+[dir="rtl"] .btn {
+  font-family: var(--font-arabic);
+}
+
+.btn-primary {
+  background: linear-gradient(135deg, var(--gold-dark), var(--gold));
+  color: var(--navy-dark);
+  box-shadow: 0 4px 12px rgba(197, 165, 114, 0.3);
+}
+
+.btn-primary:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 20px rgba(197, 165, 114, 0.4);
+}
+
+.btn-primary:active {
+  transform: translateY(0);
+}
+
+.btn-secondary {
+  background: var(--navy);
+  color: var(--white);
+}
+
+.btn-outline {
+  background: transparent;
+  border: 2px solid var(--cream-dark);
+  color: var(--text-secondary);
+}
+
+.btn-outline:hover {
+  border-color: var(--gold);
+  color: var(--gold-dark);
+}
+
+.btn-sm {
+  padding: 8px 14px;
+  font-size: 13px;
+  width: auto;
+}
+
+.btn-danger {
+  background: var(--danger);
+  color: var(--white);
+}
+
+/* Request List Items */
+.request-item {
+  background: var(--white);
+  border-radius: var(--radius);
+  padding: 16px;
+  margin-bottom: 10px;
+  box-shadow: var(--shadow);
+  border: 1px solid rgba(27, 42, 74, 0.04);
+  cursor: pointer;
+  transition: var(--transition);
+  border-left: 4px solid transparent;
+}
+
+[dir="rtl"] .request-item {
+  border-left: none;
+  border-right: 4px solid transparent;
+}
+
+.request-item:hover {
+  box-shadow: var(--shadow-lg);
+  transform: translateY(-1px);
+}
+
+.request-item.priority-high {
+  border-left-color: var(--danger);
+}
+.request-item.priority-medium {
+  border-left-color: var(--warning);
+}
+.request-item.priority-low {
+  border-left-color: var(--success);
+}
+
+[dir="rtl"] .request-item.priority-high { border-right-color: var(--danger); }
+[dir="rtl"] .request-item.priority-medium { border-right-color: var(--warning); }
+[dir="rtl"] .request-item.priority-low { border-right-color: var(--success); }
+
+.request-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.request-id {
+  font-weight: 700;
+  color: var(--navy);
+  font-size: 14px;
+}
+
+.status-badge {
+  padding: 4px 10px;
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.status-pending {
+  background: var(--pending-bg);
+  color: var(--pending-text);
+}
+
+.status-in-progress, .status-in_progress {
+  background: var(--progress-bg);
+  color: var(--progress-text);
+}
+
+.status-completed {
+  background: var(--complete-bg);
+  color: var(--complete-text);
+}
+
+.request-desc {
+  font-size: 14px;
+  color: var(--text-secondary);
+  margin-bottom: 8px;
+  line-height: 1.4;
+}
+
+.request-meta {
+  display: flex;
+  gap: 16px;
+  font-size: 12px;
+  color: var(--text-light);
+}
+
+.request-meta span {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+/* Filter Bar */
+.filter-bar {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 14px;
+  overflow-x: auto;
+  padding-bottom: 4px;
+  -webkit-overflow-scrolling: touch;
+}
+
+.filter-chip {
+  padding: 8px 16px;
+  border-radius: 20px;
+  border: 2px solid var(--cream-dark);
+  background: var(--white);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: var(--transition);
+  font-family: var(--font-body);
+}
+
+[dir="rtl"] .filter-chip {
+  font-family: var(--font-arabic);
+}
+
+.filter-chip.active {
+  background: var(--navy);
+  color: var(--gold-light);
+  border-color: var(--navy);
+}
+
+/* Search */
+.search-bar {
+  position: relative;
+  margin-bottom: 14px;
+}
+
+.search-bar input {
+  width: 100%;
+  padding: 12px 14px 12px 40px;
+  border: 2px solid var(--cream-dark);
+  border-radius: var(--radius-sm);
+  font-size: 14px;
+  font-family: var(--font-body);
+  background: var(--white);
+  transition: var(--transition);
+}
+
+[dir="rtl"] .search-bar input {
+  padding: 12px 40px 12px 14px;
+  font-family: var(--font-arabic);
+}
+
+.search-bar input:focus {
+  outline: none;
+  border-color: var(--gold);
+}
+
+.search-icon {
+  position: absolute;
+  left: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--text-light);
+  font-size: 16px;
+}
+
+[dir="rtl"] .search-icon {
+  left: auto;
+  right: 14px;
+}
+
+/* Priority indicator */
+.priority-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  display: inline-block;
+}
+
+.priority-dot.high { background: var(--danger); }
+.priority-dot.medium { background: var(--warning); }
+.priority-dot.low { background: var(--success); }
+
+/* Detail Modal */
+.detail-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(17, 29, 51, 0.7);
+  backdrop-filter: blur(8px);
+  z-index: 200;
+  display: flex;
+  align-items: flex-end;
+  animation: fadeIn 0.2s ease;
+}
+
+.detail-modal {
+  background: var(--white);
+  width: 100%;
+  max-height: 90vh;
+  border-radius: var(--radius) var(--radius) 0 0;
+  padding: 24px 20px;
+  overflow-y: auto;
+  animation: slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.detail-modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.detail-close {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: none;
+  background: var(--cream);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  color: var(--text-secondary);
+}
+
+/* Settings */
+.employee-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--cream-dark);
+}
+
+.employee-name {
+  font-weight: 600;
+  color: var(--navy);
+}
+
+.remove-btn {
+  background: none;
+  border: none;
+  color: var(--danger);
+  cursor: pointer;
+  font-size: 18px;
+  padding: 4px;
+}
+
+.add-row {
+  display: flex;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.add-row input {
+  flex: 1;
+}
+
+/* Chart container */
+.chart-container {
+  position: relative;
+  height: 200px;
+  margin-top: 8px;
+}
+
+/* Animations */
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slideUp {
+  from { transform: translateY(30px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+
+@keyframes cardIn {
+  from { transform: translateY(12px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+
+.animate-in {
+  animation: cardIn 0.4s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+/* Empty state */
+.empty-state {
+  text-align: center;
+  padding: 40px 20px;
+  color: var(--text-light);
+}
+
+.empty-icon {
+  font-size: 48px;
+  margin-bottom: 12px;
+  opacity: 0.5;
+}
+
+.empty-text {
+  font-size: 15px;
+  font-weight: 500;
+}
+
+/* Toast */
+.toast {
+  position: fixed;
+  top: 80px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--navy);
+  color: var(--white);
+  padding: 12px 24px;
+  border-radius: var(--radius-sm);
+  font-size: 14px;
+  font-weight: 500;
+  z-index: 300;
+  animation: slideDown 0.3s ease, fadeOut 0.3s ease 2.5s forwards;
+  box-shadow: var(--shadow-lg);
+}
+
+@keyframes slideDown {
+  from { transform: translate(-50%, -20px); opacity: 0; }
+  to { transform: translate(-50%, 0); opacity: 1; }
+}
+
+@keyframes fadeOut {
+  to { opacity: 0; pointer-events: none; }
+}
+
+/* Loading spinner */
+.spinner {
+  width: 24px;
+  height: 24px;
+  border: 3px solid var(--cream-dark);
+  border-top-color: var(--gold);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+  margin: 20px auto;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* Report date pickers */
+.date-row {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+
+.date-row .form-group {
+  flex: 1;
+  margin-bottom: 0;
+}
+
+/* Toggle */
+.toggle-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 0;
+  border-bottom: 1px solid var(--cream-dark);
+}
+
+.toggle-label {
+  font-weight: 600;
+  color: var(--navy);
+}
+
+.toggle {
+  width: 48px;
+  height: 26px;
+  background: var(--cream-dark);
+  border-radius: 13px;
+  position: relative;
+  cursor: pointer;
+  transition: var(--transition);
+  border: none;
+}
+
+.toggle.on {
+  background: var(--gold);
+}
+
+.toggle::after {
+  content: '';
+  position: absolute;
+  width: 22px;
+  height: 22px;
+  background: var(--white);
+  border-radius: 50%;
+  top: 2px;
+  left: 2px;
+  transition: var(--transition);
+  box-shadow: 0 1px 4px rgba(0,0,0,0.15);
+}
+
+.toggle.on::after {
+  left: 24px;
+}
+
+/* Confirmation dialog */
+.confirm-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(17, 29, 51, 0.7);
+  backdrop-filter: blur(8px);
+  z-index: 300;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+
+.confirm-box {
+  background: var(--white);
+  border-radius: var(--radius);
+  padding: 24px;
+  max-width: 320px;
+  width: 100%;
+  text-align: center;
+}
+
+.confirm-box h3 {
+  margin-bottom: 8px;
+  color: var(--navy);
+}
+
+.confirm-box p {
+  margin-bottom: 20px;
+  color: var(--text-secondary);
+  font-size: 14px;
+}
+
+.confirm-actions {
+  display: flex;
+  gap: 10px;
+}
+
+.confirm-actions .btn {
+  flex: 1;
+}
+</style>
+</head>
+<body>
+
+<div id="root"></div>
+
+<script type="text/babel">
+const API_URL = 'https://script.google.com/macros/s/AKfycbz0Gw-CFGHK1BXuLbFVDU4Px_a-7rnO4PV8kcQENRl62UxEEncg-AIJdXVDxQPGwmCB/exec';
+
+const { useState, useEffect, useRef, useCallback } = React;
+
+// ============ TRANSLATIONS ============
+const T = {
+  en: {
+    appName: 'DCL Maintenance',
+    appSub: 'CENTRAL LAB',
+    dashboard: 'Dashboard',
+    newReq: 'New Request',
+    requests: 'Requests',
+    reports: 'Reports',
+    settings: 'Settings',
+    totalRequests: 'Total Requests',
+    pending: 'Pending',
+    inProgress: 'In Progress',
+    completed: 'Completed',
+    requestsPerMonth: 'Requests Per Month',
+    recentRequests: 'Recent Requests',
+    viewAll: 'View All',
+    noRequests: 'No requests yet',
+    noRequestsDesc: 'Create your first request to get started',
+    createRequest: 'Create Request',
+    date: 'Date',
+    building: 'Building Number',
+    description: 'Description',
+    priority: 'Priority',
+    assignedTo: 'Assigned To',
+    status: 'Status',
+    actionTaken: 'Action Taken',
+    high: 'High',
+    medium: 'Medium',
+    low: 'Low',
+    selectPriority: 'Select priority',
+    selectEmployee: 'Select employee',
+    selectStatus: 'Select status',
+    submit: 'Submit Request',
+    update: 'Update Request',
+    success: 'Request submitted successfully!',
+    updated: 'Request updated!',
+    all: 'All',
+    search: 'Search requests...',
+    generateReport: 'Generate Report',
+    exportPDF: 'Export PDF',
+    exportExcel: 'Export Excel',
+    from: 'From',
+    to: 'To',
+    employees: 'Employees',
+    addEmployee: 'Add',
+    employeeName: 'Employee name',
+    language: 'Language',
+    arabic: 'Arabic',
+    english: 'English',
+    whoAreYou: 'Who are you?',
+    selectName: 'Select your name to continue',
+    requestNo: 'Request #',
+    createdBy: 'Created by',
+    modifiedBy: 'Last modified by',
+    cancel: 'Cancel',
+    confirm: 'Confirm',
+    deleteConfirm: 'Remove this employee?',
+    deleteConfirmMsg: 'This action cannot be undone.',
+    descPlaceholder: 'Describe the maintenance issue...',
+    actionPlaceholder: 'Describe the action taken...',
+    noEmployees: 'No employees added yet',
+    addFirst: 'Add employees in Settings first',
+    reportTitle: 'Maintenance Report',
+    statusByPriority: 'Status by Priority',
+  },
+  ar: {
+    appName: 'صيانة المختبر المركزي',
+    appSub: 'بلدية دبي',
+    dashboard: 'الرئيسية',
+    newReq: 'طلب جديد',
+    requests: 'الطلبات',
+    reports: 'التقارير',
+    settings: 'الإعدادات',
+    totalRequests: 'إجمالي الطلبات',
+    pending: 'قيد الانتظار',
+    inProgress: 'قيد التنفيذ',
+    completed: 'مكتمل',
+    requestsPerMonth: 'الطلبات حسب الشهر',
+    recentRequests: 'آخر الطلبات',
+    viewAll: 'عرض الكل',
+    noRequests: 'لا توجد طلبات',
+    noRequestsDesc: 'أنشئ أول طلب صيانة للبدء',
+    createRequest: 'إنشاء طلب',
+    date: 'التاريخ',
+    building: 'رقم المبنى',
+    description: 'الوصف',
+    priority: 'الأولوية',
+    assignedTo: 'مسند إلى',
+    status: 'الحالة',
+    actionTaken: 'الإجراء المتخذ',
+    high: 'عالي',
+    medium: 'متوسط',
+    low: 'منخفض',
+    selectPriority: 'اختر الأولوية',
+    selectEmployee: 'اختر الموظف',
+    selectStatus: 'اختر الحالة',
+    submit: 'إرسال الطلب',
+    update: 'تحديث الطلب',
+    success: 'تم إرسال الطلب بنجاح!',
+    updated: 'تم تحديث الطلب!',
+    all: 'الكل',
+    search: 'ابحث في الطلبات...',
+    generateReport: 'إنشاء تقرير',
+    exportPDF: 'تصدير PDF',
+    exportExcel: 'تصدير Excel',
+    from: 'من',
+    to: 'إلى',
+    employees: 'الموظفين',
+    addEmployee: 'إضافة',
+    employeeName: 'اسم الموظف',
+    language: 'اللغة',
+    arabic: 'العربية',
+    english: 'الإنجليزية',
+    whoAreYou: 'من أنت؟',
+    selectName: 'اختر اسمك للمتابعة',
+    requestNo: 'طلب #',
+    createdBy: 'أنشئ بواسطة',
+    modifiedBy: 'آخر تعديل بواسطة',
+    cancel: 'إلغاء',
+    confirm: 'تأكيد',
+    deleteConfirm: 'حذف هذا الموظف؟',
+    deleteConfirmMsg: 'لا يمكن التراجع عن هذا الإجراء.',
+    descPlaceholder: 'اوصف مشكلة الصيانة...',
+    actionPlaceholder: 'اوصف الإجراء المتخذ...',
+    noEmployees: 'لم يتم إضافة موظفين',
+    addFirst: 'أضف الموظفين في الإعدادات أولاً',
+    reportTitle: 'تقرير الصيانة',
+    statusByPriority: 'الحالة حسب الأولوية',
+  }
+};
+
+// ============ API HELPERS ============
+async function apiGet(action) {
+  try {
+    const res = await fetch(`${API_URL}?action=${action}`);
+    return await res.json();
+  } catch (e) {
+    console.error('API GET error:', e);
+    return null;
+  }
+}
+
+async function apiPost(data) {
+  try {
+    const res = await fetch(API_URL, {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+    return await res.json();
+  } catch (e) {
+    console.error('API POST error:', e);
+    return null;
+  }
+}
+
+// ============ MAIN APP ============
+function App() {
+  const [lang, setLang] = useState(localStorage.getItem('dcl-lang') || 'en');
+  const [page, setPage] = useState('dashboard');
+  const [currentUser, setCurrentUser] = useState(localStorage.getItem('dcl-user') || '');
+  const [requests, setRequests] = useState([]);
+  const [employees, setEmployees] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [toast, setToast] = useState('');
+  const [selectedRequest, setSelectedRequest] = useState(null);
+  const t = T[lang];
+
+  useEffect(() => {
+    document.documentElement.lang = lang;
+    document.documentElement.dir = lang === 'ar' ? 'rtl' : 'ltr';
+    localStorage.setItem('dcl-lang', lang);
+  }, [lang]);
+
+  useEffect(() => {
+    loadData();
+  }, []);
+
+  async function loadData() {
+    setLoading(true);
+    const [reqs, emps] = await Promise.all([
+      apiGet('getRequests'),
+      apiGet('getEmployees')
+    ]);
+    if (reqs) setRequests(reqs);
+    if (emps) setEmployees(emps);
+    setLoading(false);
+  }
+
+  function showToast(msg) {
+    setToast(msg);
+    setTimeout(() => setToast(''), 3000);
+  }
+
+  function handleUserSelect(name) {
+    setCurrentUser(name);
+    localStorage.setItem('dcl-user', name);
+  }
+
+  // User selection screen
+  if (!currentUser && employees.length > 0) {
+    return (
+      <div className="user-modal-overlay">
+        <div className="user-modal">
+          <div style={{fontSize: '40px', marginBottom: '12px'}}>🔧</div>
+          <h2>{t.whoAreYou}</h2>
+          <p>{t.selectName}</p>
+          <div className="user-list">
+            {employees.map(emp => (
+              <button key={emp} className="user-btn" onClick={() => handleUserSelect(emp)}>
+                {emp}
+              </button>
+            ))}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div>
+      {/* Header */}
+      <header className="app-header">
+        <div className="header-left">
+          <div className="logo-mark">M</div>
+          <div>
+            <div className="header-title">{t.appName}</div>
+            <div className="header-subtitle">{t.appSub}</div>
+          </div>
+        </div>
+        <div className="header-actions">
+          <button className="header-btn" onClick={() => setLang(lang === 'en' ? 'ar' : 'en')} title="Toggle Language">
+            {lang === 'en' ? 'ع' : 'En'}
+          </button>
+          {currentUser && (
+            <button className="header-btn" onClick={() => { setCurrentUser(''); localStorage.removeItem('dcl-user'); }} title="Switch User">
+              👤
+            </button>
+          )}
+        </div>
+      </header>
+
+      {/* Toast */}
+      {toast && <div className="toast">{toast}</div>}
+
+      {/* Content */}
+      <main className="app-content">
+        {loading ? (
+          <div style={{paddingTop: '40px'}}><div className="spinner"></div></div>
+        ) : (
+          <>
+            {page === 'dashboard' && <Dashboard t={t} requests={requests} setPage={setPage} lang={lang} />}
+            {page === 'new' && <NewRequest t={t} lang={lang} employees={employees} currentUser={currentUser} onSubmit={async (data) => {
+              const nextId = await apiGet('getNextId');
+              const id = nextId ? nextId.nextId : Date.now();
+              await apiPost({ action: 'addRequest', ...data, id, createdBy: currentUser });
+              showToast(t.success);
+              await loadData();
+              setPage('requests');
+            }} />}
+            {page === 'requests' && <RequestsList t={t} lang={lang} requests={requests} employees={employees} currentUser={currentUser} onSelect={setSelectedRequest} onRefresh={loadData} showToast={showToast} />}
+            {page === 'reports' && <Reports t={t} lang={lang} requests={requests} />}
+            {page === 'settings' && <Settings t={t} lang={lang} setLang={setLang} employees={employees} onRefresh={loadData} showToast={showToast} />}
+          </>
+        )}
+      </main>
+
+      {/* Detail Modal */}
+      {selectedRequest && (
+        <RequestDetail t={t} lang={lang} request={selectedRequest} employees={employees} currentUser={currentUser}
+          onClose={() => setSelectedRequest(null)}
+          onUpdate={async (data) => {
+            await apiPost({ action: 'updateRequest', ...data, modifiedBy: currentUser });
+            showToast(t.updated);
+            setSelectedRequest(null);
+            await loadData();
+          }}
+        />
+      )}
+
+      {/* Bottom Nav */}
+      <nav className="bottom-nav">
+        {[
+          { id: 'dashboard', icon: '📊', label: t.dashboard },
+          { id: 'new', icon: '➕', label: t.newReq },
+          { id: 'requests', icon: '📋', label: t.requests },
+          { id: 'reports', icon: '📄', label: t.reports },
+          { id: 'settings', icon: '⚙️', label: t.settings },
+        ].map(item => (
+          <button key={item.id} className={`nav-item ${page === item.id ? 'active' : ''}`} onClick={() => setPage(item.id)}>
+            <span className="nav-icon">{item.icon}</span>
+            {item.label}
+          </button>
+        ))}
+      </nav>
+    </div>
+  );
+}
+
+// ============ DASHBOARD ============
+function Dashboard({ t, requests, setPage, lang }) {
+  const pending = requests.filter(r => r.status === 'Pending').length;
+  const inProgress = requests.filter(r => r.status === 'In Progress').length;
+  const completed = requests.filter(r => r.status === 'Completed').length;
+  const chartRef = useRef(null);
+  const chartInstance = useRef(null);
+
+  useEffect(() => {
+    if (chartRef.current && requests.length > 0) {
+      if (chartInstance.current) chartInstance.current.destroy();
+
+      const months = {};
+      requests.forEach(r => {
+        const d = new Date(r.date || r.createdDate);
+        const key = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;
+        months[key] = (months[key] || 0) + 1;
+      });
+
+      const sorted = Object.entries(months).sort((a,b) => a[0].localeCompare(b[0]));
+      const labels = sorted.map(([k]) => {
+        const [y, m] = k.split('-');
+        return new Date(y, m-1).toLocaleDateString(lang === 'ar' ? 'ar-AE' : 'en-US', { month: 'short', year: '2-digit' });
+      });
+
+      chartInstance.current = new Chart(chartRef.current, {
+        type: 'bar',
+        data: {
+          labels,
+          datasets: [{
+            data: sorted.map(([,v]) => v),
+            backgroundColor: 'rgba(197, 165, 114, 0.6)',
+            borderColor: '#C5A572',
+            borderWidth: 2,
+            borderRadius: 6,
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { legend: { display: false } },
+          scales: {
+            y: { beginAtZero: true, ticks: { stepSize: 1 }, grid: { color: 'rgba(27,42,74,0.06)' } },
+            x: { grid: { display: false } }
+          }
+        }
+      });
+    }
+
+    return () => { if (chartInstance.current) chartInstance.current.destroy(); };
+  }, [requests, lang]);
+
+  const recent = [...requests].reverse().slice(0, 3);
+
+  return (
+    <div>
+      <h1 className="page-title animate-in">{t.dashboard}</h1>
+
+      <div className="stats-grid">
+        <div className="stat-card total animate-in" style={{animationDelay: '0.05s'}}>
+          <div className="stat-number">{requests.length}</div>
+          <div className="stat-label">{t.totalRequests}</div>
+          <div className="stat-icon">📋</div>
+        </div>
+        <div className="stat-card pending animate-in" style={{animationDelay: '0.1s'}}>
+          <div className="stat-number">{pending}</div>
+          <div className="stat-label">{t.pending}</div>
+          <div className="stat-icon">⏳</div>
+        </div>
+        <div className="stat-card progress animate-in" style={{animationDelay: '0.15s'}}>
+          <div className="stat-number">{inProgress}</div>
+          <div className="stat-label">{t.inProgress}</div>
+          <div className="stat-icon">🔧</div>
+        </div>
+        <div className="stat-card complete animate-in" style={{animationDelay: '0.2s'}}>
+          <div className="stat-number">{completed}</div>
+          <div className="stat-label">{t.completed}</div>
+          <div className="stat-icon">✅</div>
+        </div>
+      </div>
+
+      <div className="card animate-in" style={{animationDelay: '0.25s'}}>
+        <div className="card-title">{t.requestsPerMonth}</div>
+        <div className="chart-container">
+          <canvas ref={chartRef}></canvas>
+        </div>
+      </div>
+
+      <div className="card animate-in" style={{animationDelay: '0.3s'}}>
+        <div className="card-header">
+          <div className="card-title">{t.recentRequests}</div>
+          <button className="btn btn-sm btn-outline" onClick={() => setPage('requests')}>{t.viewAll}</button>
+        </div>
+        {recent.length === 0 ? (
+          <div className="empty-state">
+            <div className="empty-icon">📭</div>
+            <div className="empty-text">{t.noRequests}</div>
+          </div>
+        ) : (
+          recent.map(r => (
+            <div key={r.id} className={`request-item priority-${(r.priority||'').toLowerCase()}`}>
+              <div className="request-header">
+                <span className="request-id">#{r.id}</span>
+                <span className={`status-badge status-${(r.status||'').toLowerCase().replace(' ', '-')}`}>
+                  {r.status === 'Pending' ? t.pending : r.status === 'In Progress' ? t.inProgress : t.completed}
+                </span>
+              </div>
+              <div className="request-desc">{r.description}</div>
+              <div className="request-meta">
+                <span>🏢 {r.building}</span>
+                <span>📅 {new Date(r.date || r.createdDate).toLocaleDateString()}</span>
+              </div>
+            </div>
+          ))
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ============ NEW REQUEST ============
+function NewRequest({ t, lang, employees, currentUser, onSubmit }) {
+  const [form, setForm] = useState({
+    date: new Date().toISOString().split('T')[0],
+    building: '',
+    description: '',
+    priority: '',
+    assignedTo: '',
+    status: 'Pending',
+    actionTaken: '',
+  });
+  const [submitting, setSubmitting] = useState(false);
+
+  function handleChange(field, value) {
+    setForm(prev => ({ ...prev, [field]: value }));
+  }
+
+  async function handleSubmit(e) {
+    e.preventDefault();
+    if (!form.building || !form.description || !form.priority) return;
+    setSubmitting(true);
+    await onSubmit(form);
+    setSubmitting(false);
+  }
+
+  if (employees.length === 0) {
+    return (
+      <div>
+        <h1 className="page-title">{t.newReq}</h1>
+        <div className="empty-state">
+          <div className="empty-icon">👥</div>
+          <div className="empty-text">{t.noEmployees}</div>
+          <p style={{color: 'var(--text-light)', marginTop: '8px'}}>{t.addFirst}</p>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div>
+      <h1 className="page-title animate-in">{t.newReq}</h1>
+      <form onSubmit={handleSubmit} className="card animate-in" style={{animationDelay: '0.1s'}}>
+        <div className="form-group">
+          <label className="form-label">{t.date}</label>
+          <input type="date" className="form-input" value={form.date} onChange={e => handleChange('date', e.target.value)} />
+        </div>
+
+        <div className="form-group">
+          <label className="form-label">{t.building}</label>
+          <input type="text" className="form-input" value={form.building} onChange={e => handleChange('building', e.target.value)} placeholder={lang === 'ar' ? 'مثال: مبنى 5' : 'e.g. Building 5'} required />
+        </div>
+
+        <div className="form-group">
+          <label className="form-label">{t.description}</label>
+          <textarea className="form-textarea" value={form.description} onChange={e => handleChange('description', e.target.value)} placeholder={t.descPlaceholder} required />
+        </div>
+
+        <div className="form-group">
+          <label className="form-label">{t.priority}</label>
+          <select className="form-select" value={form.priority} onChange={e => handleChange('priority', e.target.value)} required>
+            <option value="">{t.selectPriority}</option>
+            <option value="High">{t.high}</option>
+            <option value="Medium">{t.medium}</option>
+            <option value="Low">{t.low}</option>
+          </select>
+        </div>
+
+        <div className="form-group">
+          <label className="form-label">{t.assignedTo}</label>
+          <select className="form-select" value={form.assignedTo} onChange={e => handleChange('assignedTo', e.target.value)}>
+            <option value="">{t.selectEmployee}</option>
+            {employees.map(emp => <option key={emp} value={emp}>{emp}</option>)}
+          </select>
+        </div>
+
+        <div className="form-group">
+          <label className="form-label">{t.actionTaken}</label>
+          <textarea className="form-textarea" value={form.actionTaken} onChange={e => handleChange('actionTaken', e.target.value)} placeholder={t.actionPlaceholder} />
+        </div>
+
+        <button type="submit" className="btn btn-primary" disabled={submitting}>
+          {submitting ? '...' : t.submit}
+        </button>
+      </form>
+    </div>
+  );
+}
+
+// ============ REQUESTS LIST ============
+function RequestsList({ t, lang, requests, employees, currentUser, onSelect, onRefresh, showToast }) {
+  const [filter, setFilter] = useState('All');
+  const [search, setSearch] = useState('');
+
+  const filtered = requests.filter(r => {
+    if (filter !== 'All' && r.status !== filter) return false;
+    if (search) {
+      const s = search.toLowerCase();
+      return (r.description || '').toLowerCase().includes(s) ||
+             (r.building || '').toLowerCase().includes(s) ||
+             String(r.id).includes(s);
+    }
+    return true;
+  }).reverse();
+
+  return (
+    <div>
+      <h1 className="page-title animate-in">{t.requests}</h1>
+
+      <div className="search-bar animate-in" style={{animationDelay: '0.05s'}}>
+        <span className="search-icon">🔍</span>
+        <input type="text" value={search} onChange={e => setSearch(e.target.value)} placeholder={t.search} />
+      </div>
+
+      <div className="filter-bar animate-in" style={{animationDelay: '0.1s'}}>
+        {['All', 'Pending', 'In Progress', 'Completed'].map(f => (
+          <button key={f} className={`filter-chip ${filter === f ? 'active' : ''}`} onClick={() => setFilter(f)}>
+            {f === 'All' ? t.all : f === 'Pending' ? t.pending : f === 'In Progress' ? t.inProgress : t.completed}
+          </button>
+        ))}
+      </div>
+
+      {filtered.length === 0 ? (
+        <div className="empty-state">
+          <div className="empty-icon">📭</div>
+          <div className="empty-text">{t.noRequests}</div>
+        </div>
+      ) : (
+        filtered.map((r, i) => (
+          <div key={r.id} className={`request-item priority-${(r.priority||'').toLowerCase()} animate-in`}
+            style={{animationDelay: `${0.15 + i * 0.03}s`}}
+            onClick={() => onSelect(r)}>
+            <div className="request-header">
+              <span className="request-id">#{r.id}</span>
+              <span className={`status-badge status-${(r.status||'').toLowerCase().replace(' ', '-')}`}>
+                {r.status === 'Pending' ? t.pending : r.status === 'In Progress' ? t.inProgress : t.completed}
+              </span>
+            </div>
+            <div className="request-desc">{r.description}</div>
+            <div className="request-meta">
+              <span>🏢 {r.building}</span>
+              <span>📅 {new Date(r.date || r.createdDate).toLocaleDateString()}</span>
+              {r.assignedTo && <span>👤 {r.assignedTo}</span>}
+            </div>
+          </div>
+        ))
+      )}
+    </div>
+  );
+}
+
+// ============ REQUEST DETAIL ============
+function RequestDetail({ t, lang, request, employees, currentUser, onClose, onUpdate }) {
+  const [form, setForm] = useState({
+    id: request.id,
+    status: request.status,
+    actionTaken: request.actionTaken || '',
+    assignedTo: request.assignedTo || '',
+    priority: request.priority || '',
+    building: request.building || '',
+    description: request.description || '',
+  });
+
+  function handleChange(field, value) {
+    setForm(prev => ({ ...prev, [field]: value }));
+  }
+
+  return (
+    <div className="detail-overlay" onClick={e => e.target === e.currentTarget && onClose()}>
+      <div className="detail-modal">
+        <div className="detail-modal-header">
+          <h2 style={{fontFamily: 'var(--font-display)', color: 'var(--navy)'}}>
+            {t.requestNo}{request.id}
+          </h2>
+          <button className="detail-close" onClick={onClose}>✕</button>
+        </div>
+
+        <div className="form-group">
+          <label className="form-label">{t.date}</label>
+          <input type="text" className="form-input" value={new Date(request.date || request.createdDate).toLocaleDateString()} disabled />
+        </div>
+
+        <div className="form-group">
+          <label className="form-label">{t.building}</label>
+          <input type="text" className="form-input" value={form.building} onChange={e => handleChange('building', e.target.value)} />
+        </div>
+
+        <div className="form-group">
+          <label className="form-label">{t.description}</label>
+          <textarea className="form-textarea" value={form.description} onChange={e => handleChange('description', e.target.value)} />
+        </div>
+
+        <div className="form-group">
+          <label className="form-label">{t.priority}</label>
+          <select className="form-select" value={form.priority} onChange={e => handleChange('priority', e.target.value)}>
+            <option value="High">{t.high}</option>
+            <option value="Medium">{t.medium}</option>
+            <option value="Low">{t.low}</option>
+          </select>
+        </div>
+
+        <div className="form-group">
+          <label className="form-label">{t.assignedTo}</label>
+          <select className="form-select" value={form.assignedTo} onChange={e => handleChange('assignedTo', e.target.value)}>
+            <option value="">{t.selectEmployee}</option>
+            {employees.map(emp => <option key={emp} value={emp}>{emp}</option>)}
+          </select>
+        </div>
+
+        <div className="form-group">
+          <label className="form-label">{t.status}</label>
+          <select className="form-select" value={form.status} onChange={e => handleChange('status', e.target.value)}>
+            <option value="Pending">{t.pending}</option>
+            <option value="In Progress">{t.inProgress}</option>
+            <option value="Completed">{t.completed}</option>
+          </select>
+        </div>
+
+        <div className="form-group">
+          <label className="form-label">{t.actionTaken}</label>
+          <textarea className="form-textarea" value={form.actionTaken} onChange={e => handleChange('actionTaken', e.target.value)} placeholder={t.actionPlaceholder} />
+        </div>
+
+        {request.createdBy && (
+          <div style={{fontSize: '12px', color: 'var(--text-light)', marginBottom: '8px'}}>
+            {t.createdBy}: {request.createdBy}
+          </div>
+        )}
+        {request.modifiedBy && (
+          <div style={{fontSize: '12px', color: 'var(--text-light)', marginBottom: '16px'}}>
+            {t.modifiedBy}: {request.modifiedBy}
+          </div>
+        )}
+
+        <button className="btn btn-primary" onClick={() => onUpdate(form)}>
+          {t.update}
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// ============ REPORTS ============
+function Reports({ t, lang, requests }) {
+  const [dateFrom, setDateFrom] = useState('');
+  const [dateTo, setDateTo] = useState('');
+
+  function getFiltered() {
+    return requests.filter(r => {
+      const d = new Date(r.date || r.createdDate);
+      if (dateFrom && d < new Date(dateFrom)) return false;
+      if (dateTo && d > new Date(dateTo + 'T23:59:59')) return false;
+      return true;
+    });
+  }
+
+  function exportPDF() {
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF();
+    const data = getFiltered();
+
+    doc.setFontSize(18);
+    doc.setTextColor(27, 42, 74);
+    doc.text('DCL Maintenance Report', 14, 22);
+
+    doc.setFontSize(10);
+    doc.setTextColor(90, 100, 120);
+    const range = dateFrom || dateTo ?
+      `${dateFrom || 'Start'} to ${dateTo || 'Now'}` : 'All time';
+    doc.text(`Period: ${range} | Total: ${data.length} requests`, 14, 30);
+
+    const pending = data.filter(r => r.status === 'Pending').length;
+    const progress = data.filter(r => r.status === 'In Progress').length;
+    const completed = data.filter(r => r.status === 'Completed').length;
+
+    doc.setFontSize(11);
+    doc.setTextColor(27, 42, 74);
+    doc.text(`Pending: ${pending} | In Progress: ${progress} | Completed: ${completed}`, 14, 38);
+
+    let y = 48;
+    doc.setFontSize(9);
+
+    // Table header
+    doc.setFillColor(27, 42, 74);
+    doc.rect(14, y, 182, 8, 'F');
+    doc.setTextColor(255, 255, 255);
+    doc.text('#', 16, y + 5.5);
+    doc.text('Date', 28, y + 5.5);
+    doc.text('Building', 55, y + 5.5);
+    doc.text('Description', 82, y + 5.5);
+    doc.text('Priority', 130, y + 5.5);
+    doc.text('Status', 155, y + 5.5);
+    y += 10;
+
+    doc.setTextColor(60, 60, 60);
+    data.forEach((r, i) => {
+      if (y > 270) {
+        doc.addPage();
+        y = 20;
+      }
+      if (i % 2 === 0) {
+        doc.setFillColor(248, 246, 241);
+        doc.rect(14, y - 3, 182, 7, 'F');
+      }
+      doc.text(String(r.id), 16, y + 1);
+      doc.text(new Date(r.date || r.createdDate).toLocaleDateString(), 28, y + 1);
+      doc.text(String(r.building || ''), 55, y + 1);
+      doc.text((r.description || '').substring(0, 30), 82, y + 1);
+      doc.text(r.priority || '', 130, y + 1);
+      doc.text(r.status || '', 155, y + 1);
+      y += 7;
+    });
+
+    doc.save('maintenance-report.pdf');
+  }
+
+  function exportExcel() {
+    const data = getFiltered().map(r => ({
+      'ID': r.id,
+      'Date': new Date(r.date || r.createdDate).toLocaleDateString(),
+      'Building': r.building,
+      'Description': r.description,
+      'Priority': r.priority,
+      'Assigned To': r.assignedTo,
+      'Status': r.status,
+      'Action Taken': r.actionTaken,
+      'Created By': r.createdBy,
+      'Modified By': r.modifiedBy,
+    }));
+
+    const ws = XLSX.utils.json_to_sheet(data);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Requests');
+    XLSX.writeFile(wb, 'maintenance-report.xlsx');
+  }
+
+  const filtered = getFiltered();
+  const pending = filtered.filter(r => r.status === 'Pending').length;
+  const progress = filtered.filter(r => r.status === 'In Progress').length;
+  const completed = filtered.filter(r => r.status === 'Completed').length;
+
+  return (
+    <div>
+      <h1 className="page-title animate-in">{t.reports}</h1>
+
+      <div className="card animate-in" style={{animationDelay: '0.1s'}}>
+        <div className="card-title" style={{marginBottom: '14px'}}>{t.generateReport}</div>
+
+        <div className="date-row">
+          <div className="form-group">
+            <label className="form-label">{t.from}</label>
+            <input type="date" className="form-input" value={dateFrom} onChange={e => setDateFrom(e.target.value)} />
+          </div>
+          <div className="form-group">
+            <label className="form-label">{t.to}</label>
+            <input type="date" className="form-input" value={dateTo} onChange={e => setDateTo(e.target.value)} />
+          </div>
+        </div>
+
+        <div className="stats-grid" style={{marginBottom: '14px'}}>
+          <div className="stat-card pending">
+            <div className="stat-number">{pending}</div>
+            <div className="stat-label">{t.pending}</div>
+          </div>
+          <div className="stat-card progress">
+            <div className="stat-number">{progress}</div>
+            <div className="stat-label">{t.inProgress}</div>
+          </div>
+          <div className="stat-card complete" style={{gridColumn: 'span 2'}}>
+            <div className="stat-number">{completed}</div>
+            <div className="stat-label">{t.completed}</div>
+          </div>
+        </div>
+
+        <div style={{display: 'flex', gap: '10px'}}>
+          <button className="btn btn-primary" onClick={exportPDF} style={{flex: 1}}>
+            📄 {t.exportPDF}
+          </button>
+          <button className="btn btn-secondary" onClick={exportExcel} style={{flex: 1}}>
+            📊 {t.exportExcel}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ============ SETTINGS ============
+function Settings({ t, lang, setLang, employees, onRefresh, showToast }) {
+  const [newName, setNewName] = useState('');
+  const [confirmDelete, setConfirmDelete] = useState(null);
+  const [adminUnlocked, setAdminUnlocked] = useState(false);
+  const [pinInput, setPinInput] = useState('');
+  const [pinError, setPinError] = useState(false);
+  const ADMIN_PIN = '0987';
+
+  function checkPin() {
+    if (pinInput === ADMIN_PIN) {
+      setAdminUnlocked(true);
+      setPinError(false);
+    } else {
+      setPinError(true);
+      setPinInput('');
+    }
+  }
+
+  async function addEmployee() {
+    if (!newName.trim()) return;
+    await apiPost({ action: 'addEmployee', name: newName.trim() });
+    setNewName('');
+    await onRefresh();
+  }
+
+  async function removeEmployee(name) {
+    await apiPost({ action: 'removeEmployee', name });
+    setConfirmDelete(null);
+    await onRefresh();
+  }
+
+  return (
+    <div>
+      <h1 className="page-title animate-in">{t.settings}</h1>
+
+      <div className="card animate-in" style={{animationDelay: '0.1s'}}>
+        <div className="card-title" style={{marginBottom: '12px'}}>{t.language}</div>
+        <div className="toggle-row" style={{borderBottom: 'none'}}>
+          <span className="toggle-label">{lang === 'en' ? t.english : t.arabic}</span>
+          <button className={`toggle ${lang === 'ar' ? 'on' : ''}`} onClick={() => setLang(lang === 'en' ? 'ar' : 'en')} />
+        </div>
+      </div>
+
+      <div className="card animate-in" style={{animationDelay: '0.15s'}}>
+        <div className="card-title" style={{marginBottom: '12px'}}>{t.employees}</div>
+
+        {employees.length === 0 ? (
+          <div style={{color: 'var(--text-light)', fontSize: '14px', padding: '12px 0'}}>{t.noEmployees}</div>
+        ) : (
+          employees.map(emp => (
+            <div key={emp} className="employee-item">
+              <span className="employee-name">{emp}</span>
+              {adminUnlocked && (
+                <button className="remove-btn" onClick={() => setConfirmDelete(emp)}>✕</button>
+              )}
+            </div>
+          ))
+        )}
+
+        {!adminUnlocked ? (
+          <div style={{marginTop: '16px'}}>
+            <div style={{fontSize: '13px', color: 'var(--text-secondary)', marginBottom: '8px', fontWeight: '600'}}>
+              {lang === 'ar' ? 'أدخل رمز المسؤول لإدارة الموظفين' : 'Enter admin PIN to manage employees'}
+            </div>
+            <div className="add-row">
+              <input type="password" className="form-input" value={pinInput}
+                onChange={e => { setPinInput(e.target.value); setPinError(false); }}
+                placeholder={lang === 'ar' ? 'رمز PIN' : 'PIN code'}
+                maxLength={4}
+                onKeyDown={e => e.key === 'Enter' && checkPin()}
+                style={pinError ? {borderColor: 'var(--danger)'} : {}} />
+              <button className="btn btn-secondary btn-sm" onClick={checkPin} style={{width: 'auto', whiteSpace: 'nowrap'}}>
+                🔓
+              </button>
+            </div>
+            {pinError && (
+              <div style={{color: 'var(--danger)', fontSize: '12px', marginTop: '6px'}}>
+                {lang === 'ar' ? 'رمز خاطئ' : 'Wrong PIN'}
+              </div>
+            )}
+          </div>
+        ) : (
+          <div className="add-row">
+            <input type="text" className="form-input" value={newName} onChange={e => setNewName(e.target.value)}
+              placeholder={t.employeeName} onKeyDown={e => e.key === 'Enter' && addEmployee()} />
+            <button className="btn btn-primary btn-sm" onClick={addEmployee} style={{width: 'auto', whiteSpace: 'nowrap'}}>
+              {t.addEmployee}
+            </button>
+          </div>
+        )}
+      </div>
+
+      {/* Delete Confirmation */}
+      {confirmDelete && (
+        <div className="confirm-overlay" onClick={e => e.target === e.currentTarget && setConfirmDelete(null)}>
+          <div className="confirm-box">
+            <h3>{t.deleteConfirm}</h3>
+            <p>{confirmDelete}<br/>{t.deleteConfirmMsg}</p>
+            <div className="confirm-actions">
+              <button className="btn btn-outline btn-sm" onClick={() => setConfirmDelete(null)}>{t.cancel}</button>
+              <button className="btn btn-danger btn-sm" onClick={() => removeEmployee(confirmDelete)}>{t.confirm}</button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ============ RENDER ============
+ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+</script>
+</body>
+</html>
