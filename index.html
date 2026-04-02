@@ -1126,6 +1126,8 @@ async function apiPost(data) {
 }
 
 // ============ MAIN APP ============
+const APP_PASSWORD = '1977';
+
 function App() {
   const [lang, setLang] = useState(localStorage.getItem('dcl-lang') || 'en');
   const [page, setPage] = useState('dashboard');
@@ -1135,6 +1137,9 @@ function App() {
   const [loading, setLoading] = useState(true);
   const [toast, setToast] = useState('');
   const [selectedRequest, setSelectedRequest] = useState(null);
+  const [appUnlocked, setAppUnlocked] = useState(localStorage.getItem('dcl-access') === 'granted');
+  const [accessPw, setAccessPw] = useState('');
+  const [accessError, setAccessError] = useState(false);
   const t = T[lang];
 
   useEffect(() => {
@@ -1166,6 +1171,51 @@ function App() {
   function handleUserSelect(name) {
     setCurrentUser(name);
     localStorage.setItem('dcl-user', name);
+  }
+
+  // App lock screen
+  if (!appUnlocked) {
+    return (
+      <div className="user-modal-overlay">
+        <div className="user-modal">
+          <div className="logo-mark" style={{width: '56px', height: '56px', fontSize: '24px', margin: '0 auto 16px'}}>M</div>
+          <h2>{lang === 'ar' ? 'صيانة المختبر المركزي' : 'DCL Maintenance'}</h2>
+          <p>{lang === 'ar' ? 'أدخل كلمة المرور للدخول' : 'Enter password to access'}</p>
+          <input type="password" className="form-input" value={accessPw}
+            onChange={e => { setAccessPw(e.target.value); setAccessError(false); }}
+            placeholder={lang === 'ar' ? 'كلمة المرور' : 'Password'}
+            onKeyDown={e => {
+              if (e.key === 'Enter') {
+                if (accessPw === APP_PASSWORD) {
+                  setAppUnlocked(true);
+                  localStorage.setItem('dcl-access', 'granted');
+                } else {
+                  setAccessError(true);
+                  setAccessPw('');
+                }
+              }
+            }}
+            style={{marginBottom: '12px', textAlign: 'center', ...(accessError ? {borderColor: 'var(--danger)'} : {})}} />
+          {accessError && (
+            <div style={{color: 'var(--danger)', fontSize: '13px', marginBottom: '12px'}}>
+              {lang === 'ar' ? 'كلمة مرور خاطئة' : 'Wrong password'}
+            </div>
+          )}
+          <button className="btn btn-primary" onClick={() => {
+            if (accessPw === APP_PASSWORD) {
+              setAppUnlocked(true);
+              localStorage.setItem('dcl-access', 'granted');
+            } else {
+              setAccessError(true);
+              setAccessPw('');
+            }
+          }}>{lang === 'ar' ? 'دخول' : 'Enter'}</button>
+          <button className="btn btn-outline" style={{marginTop: '8px'}} onClick={() => setLang(lang === 'en' ? 'ar' : 'en')}>
+            {lang === 'en' ? 'العربية' : 'English'}
+          </button>
+        </div>
+      </div>
+    );
   }
 
   // User selection screen
